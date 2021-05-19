@@ -47,6 +47,22 @@ int Application::exec(int argc, char** argv)
 	while (!done && SDL_WaitEvent(&ev))
 	{
 		switch (ev.type) {
+		case SDL_WINDOWEVENT:
+			switch(ev.window.event) {
+			case SDL_WINDOWEVENT_SHOWN:
+				main_window.onWindowShown();
+				break;
+			case SDL_WINDOWEVENT_HIDDEN:
+				main_window.onWindowHidden();
+				break;
+			}
+			break;
+		case SDL_USEREVENT: {
+			/* タイマでこの関数を呼びたいところだが, マルチスレッドの問題のためできない */
+			auto f = reinterpret_cast<void(*)(void*)>(ev.user.data1);
+			(*f)(ev.user.data2);
+			break;
+		}
 		case SDL_QUIT:
 			done = true;
 			break;

@@ -8,10 +8,14 @@ class FontCache final
 	: non_copy_move
 {
 public:
+	static constexpr int DEFAULT_FONT_SIZE = 12;
+public:
 	FontCache();
 	~FontCache();
 
 	TTF_Font* get(int ptsize);
+
+	TTF_Font* defaultFont();
 
 private:
 	std::mutex mMutex;

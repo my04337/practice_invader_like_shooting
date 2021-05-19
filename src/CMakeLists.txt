@@ -11,6 +11,11 @@ add_executable(
 
 	App/Application.cpp
 	App/MainWindow.cpp
+	
+	GameEngine/GameEngine.cpp
+
+	GameObject/GameObject.cpp
+	GameObject/OwnMachine.cpp
 	)
 	
 	

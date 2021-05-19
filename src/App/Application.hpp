@@ -19,6 +19,7 @@ private:
 	Application();
 	~Application();
 
+	SDL_Window* mWindow = nullptr;
 	std::unique_ptr<FontCache> mFontCache;
 };
 

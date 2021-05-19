@@ -54,6 +54,9 @@ namespace App
 // クロック類
 using clock = std::chrono::steady_clock;
 
+// tick : ゲーム内時間を示す。通常、tick=フレーム
+using tick_t = std::uint64_t;
+
 /// コピー禁止,ムーブ可能型
 struct non_copy {
 	constexpr non_copy() = default;

@@ -15,9 +15,11 @@ Text& Text::operator=(Text&& d)noexcept
 	if(&d == this) return *this;
 
 	dispose();
+	mRenderer = d.mRenderer;
 	mTexture = d.mTexture;
 	mWidth = d.mWidth;
 	mHeight = d.mHeight;
+	d.mRenderer = nullptr;
 	d.mTexture = nullptr;
 	d.mWidth = 0;
 	d.mHeight = 0;
@@ -28,16 +30,18 @@ Text::~Text()
 	dispose();
 }
 
-Text Text::make(SDL_Renderer* renderer, TTF_Font* font, const char* textU8, SDL_Color color)
+Text Text::make(SDL_Renderer* renderer, TTF_Font* font, const std::wstring& textW, SDL_Color color)
 {
 	assert(renderer != nullptr);
 	assert(font != nullptr);
-	
-	auto surface = TTF_RenderUTF8_Blended(font, textU8, color);
+	assert(sizeof(wchar_t) == sizeof(Uint16));
+
+	auto surface = TTF_RenderUNICODE_Blended(font, reinterpret_cast<const Uint16 *>(textW.c_str()), color);
 	if(!surface) return {};
 	auto fin_act_free_surface = finally([&]{SDL_FreeSurface(surface);});
 
 	Text text;
+	text.mRenderer = renderer;
 	text.mTexture = SDL_CreateTextureFromSurface(renderer, surface);
 	text.mWidth = surface->w;
 	text.mHeight = surface->h;
@@ -49,4 +53,53 @@ void Text::dispose()
 		SDL_DestroyTexture(mTexture);
 		mTexture = nullptr;
 	}
+}
+void Text ::draw(int x, int y)
+{
+	if (!mRenderer || !mTexture) return;
+
+	SDL_Rect rect{ x, y, mWidth, mHeight };
+	SDL_RenderCopy(mRenderer, mTexture, nullptr, &rect);
+}
+
+// ---
+
+FastTextRenderer::FastTextRenderer(SDL_Renderer* renderer, TTF_Font* font, SDL_Color color)
+	: mRenderer(renderer)
+	, mFont(font)
+	, mColor(color)
+{
+}
+FastTextRenderer::~FastTextRenderer()
+{
+}
+SDL_Rect FastTextRenderer::draw(int x, int y, const std::wstring& text)
+{
+	// 高速化のため、一文字毎に分解して描画する
+	// TODO サロゲートペアに対応する
+	// TODO 改行に対応する
+
+	int curX = x;
+	int maxHeight = 0;
+
+	for(wchar_t ch_ : text) { 
+		std::wstring ch(1, ch_);
+		Text* text = nullptr;
+		if (auto found = mCachedCharacters.find(ch); found != mCachedCharacters.end()) {
+			// 既にキャッシュされている場合、それを用いて描画する
+			text = &found->second;
+		} else {
+			// まだ存在しない場合、生成してキャッシュする
+			text = &mCachedCharacters.emplace(ch, Text::make(mRenderer, mFont, ch, mColor)).first->second;
+		}
+
+		assert(text != nullptr);
+		text->draw(curX, y);
+		curX += text->width();
+		maxHeight = std::max(maxHeight, text->height());
+
+	}
+
+
+	return { x, y, curX, y + maxHeight };
 }

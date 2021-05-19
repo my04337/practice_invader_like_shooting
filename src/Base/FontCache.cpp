@@ -32,3 +32,7 @@ TTF_Font* FontCache::get(int ptsize)
 	mFontMap.emplace(ptsize, font);
 	return font;
 }
+TTF_Font* FontCache::defaultFont()
+{
+	return get(DEFAULT_FONT_SIZE);
+}
